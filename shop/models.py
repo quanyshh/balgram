@@ -16,6 +16,28 @@ User = get_user_model()
 # 6. Customer
 # 7. Specification
 
+class LatestProductsManager:
+
+    @staticmethod
+    def get_products_for_main_page(*args, **kwargs):
+        with_respect_to = kwargs.get('with_respect_to')
+        products = []
+        ct_models = ContentType.objects.filter(model__in=args)
+        for ct_model in ct_models:
+            model_products = ct_model.model_class()._base_manager.all().order_by('-id')[:5]
+            products.extend(model_products)
+        if with_respect_to:
+            ct_model = ContentType.objects.filter(model=with_respect_to)
+            if ct_model.exists():
+                if with_respect_to in args:
+                    return sorted(
+                        products, key=lambda x: x.__class__._meta.model_name.startswith(with_respect_to), reverse=True
+                    )
+        return products
+
+class LatestProducts:
+
+    objects = LatestProductsManager()
 
 class Category(models.Model):
 
@@ -36,6 +58,7 @@ class Product(models.Model):
     image = models.ImageField(verbose_name='Изображение')
     description = models.TextField(verbose_name='Описание', null=True)
     price = models.DecimalField(max_digits=9, decimal_places=2, verbose_name='Цена')
+
 
     def __str__(self):
         return self.title
@@ -99,5 +122,4 @@ class Smartphone(Product):
     sd_volume = models.CharField(max_length=255, verbose_name='Максимальный объем встраиваемой памяти')
     main_cam_mp = models.CharField(max_length=255, verbose_name='Главная камера')
     frontal_cam_mp = models.CharField(max_length=255, verbose_name='Фронтальная камера')
-    
     
